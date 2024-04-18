@@ -43,18 +43,30 @@ def main():
         {"title": "Rebuild instances", "description": "Rebuild and redeploy EC2 instances", "date": datetime(2024, 4, 25).isoformat(), 'allDay': 'true'}
         ]
 
+
     with ui.row().classes('w-full no-wrap'):
-        month_view_calendar(events_list, 'w-2/3')
-            # with ui.tabs().classes('w-full') as tabs:
-            #     ui.label("Calendar View")
-            #     one = ui.tab('Month View')
-            #     two = ui.tab('List View')
-            # with ui.tab_panels(tabs, value=one).classes('w-full'):
-            #     with ui.tab_panel(one):
-            #         month_view_calendar(events_list)
-            #     with ui.tab_panel(two):
-            #         list_view_calendar(events_list)
-        ui.label("Select Event Details").classes('w-1/3')
+        with ui.tabs().classes('w-1/2') as tabs:
+            one = ui.tab('Month View')
+            two = ui.tab('List View')
+
+        with ui.column().classes('w-1/2'):
+            ui.label("Selected Event Details")
+            with ui.grid(columns=2).classes('w-1/2'):
+                ui.label("Name")
+                ui.input()
+
+                ui.label("Date")
+                with ui.input('Date') as date:
+                    with date.add_slot('append'):
+                        ui.icon('edit_calendar').on('click', lambda: menu.open()).classes('cursor-pointer')
+                    with ui.menu() as menu:
+                        ui.date().bind_value(date)
+
+    with ui.tab_panels(tabs, value=one).classes('w-1/2'):
+        with ui.tab_panel(one):
+            month_view_calendar(events_list)
+        with ui.tab_panel(two):
+            list_view_calendar(events_list)
 
     ui.run()
 
