@@ -1,21 +1,15 @@
 from datetime import datetime
 
-import nicegui.elements.input
 from nicegui import events, ui
 
 from fullcalendar import FullCalendar
 from models import db, Event
 
-CURRENT_EVENT = ""
+CURRENT_EVENT_ID = None
 
 
-def month_view_calendar(events_list: list[dict], ui_elements: dict[str, nicegui.elements.input.Input],
+def month_view_calendar(events_list: list[dict], ui_elements: dict,
                         classes="") -> FullCalendar:
-    def handle_click(event: events.GenericEventArguments, ui_elements: dict[str, nicegui.elements.input.Input]):
-        ui_elements["title"].set_value(event.args["info"]["event"]["title"])
-        ui_elements["date"].set_value(event.args["info"]["event"]["start"])
-        global CURRENT_EVENT
-        CURRENT_EVENT = event.args["info"]["event"]
 
     options = {
         'initialView': 'dayGridMonth',
@@ -27,8 +21,35 @@ def month_view_calendar(events_list: list[dict], ui_elements: dict[str, nicegui.
         'events': events_list,
     }
 
-    month_calendar = FullCalendar(options, on_click=lambda e: handle_click(e, ui_elements)).classes(classes)
+    month_calendar = FullCalendar(options, on_click=lambda e: handle_event_click(e, ui_elements)).classes(classes)
     return month_calendar
+
+
+def handle_event_click(event: events.GenericEventArguments, ui_elements: dict):
+    if 'info' in event.args:
+        calendar_instance = event.sender
+        clicked_event = event.args["info"]["event"]
+        ui_elements["title"].set_value(clicked_event["title"])
+        ui_elements["date"].set_value(clicked_event["start"])
+
+        global CURRENT_EVENT_ID
+        if CURRENT_EVENT_ID is not None:
+            calendar_instance.set_event_props(CURRENT_EVENT_ID, {"backgroundColor": "#3788d8",
+                                                                 "borderColor": "#3788d8"})
+        CURRENT_EVENT_ID = clicked_event["id"]
+        calendar_instance.set_event_props(CURRENT_EVENT_ID, {"backgroundColor": "red",
+                                                             "borderColor": "red"})
+
+
+def handle_update_event(ui_elements: dict):
+    if CURRENT_EVENT_ID is None:
+        return None
+    else:
+        new_date = ui_elements["date"].value
+        new_title = ui_elements["title"].value
+        ui_elements["month_calendar"].set_event_start(CURRENT_EVENT_ID, new_date)
+        ui_elements["month_calendar"].set_event_props(CURRENT_EVENT_ID, {"title": new_title})
+
 
 
 def list_view_calendar(events_list: list[dict]):
@@ -41,15 +62,15 @@ def list_view_calendar(events_list: list[dict]):
     FullCalendar(options)
 
 
+@ui.page('/')
 def main():
     events_list = [
-        {"title": "Rotate keys", "description": "Rotate keys for REMORA", "date": datetime(2024, 4, 20).isoformat(), 'allDay': 'true'},
-        {"title": "Check EC2", "description": "Check the EC2 instances for bugs", "date": datetime(2024, 4, 23).isoformat(), 'allDay': 'true'},
-        {"title": "Rebuild instances", "description": "Rebuild and redeploy EC2 instances", "date": datetime(2024, 4, 25).isoformat(), 'allDay': 'true'}
+        {"id": 1, "title": "Rotate keys", "description": "Rotate keys for REMORA", "date": datetime(2024, 4, 20).isoformat(), 'allDay': 'true'},
+        {"id": 2, "title": "Check EC2", "description": "Check the EC2 instances for bugs", "date": datetime(2024, 4, 23).isoformat(), 'allDay': 'true'},
+        {"id": 3, "title": "Rebuild instances", "description": "Rebuild and redeploy EC2 instances", "date": datetime(2024, 4, 25).isoformat(), 'allDay': 'true'}
         ]
 
     ui_elements = {}
-    current_event = {}
 
     with ui.row().classes('w-full no-wrap'):
         with ui.column().classes('w-1/2'):
@@ -74,7 +95,7 @@ def main():
                         ui.icon('edit_calendar').on('click', lambda: menu.open()).classes('cursor-pointer')
                     with ui.menu() as menu:
                         ui.date().bind_value(ui_elements["date"])
-                ui.button('Update Event', on_click=lambda: ui.notify('You clicked me!'))
+                ui.button('Update Event', on_click=lambda: handle_update_event(ui_elements))
 
     ui.run()
 

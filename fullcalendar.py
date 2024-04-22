@@ -51,6 +51,21 @@ class FullCalendar(Element, component='fullcalendar.js'):
         self.update()
         self.run_method('update_calendar')
 
+    def set_event_start(self, event_id: int, date: str) -> None:
+        self.run_method("set_event_start", event_id, date)
+
+    def set_event_props(self, event_id: int, props: dict[str, str]) -> None:
+        for name, value in props.items():
+            self.run_method("set_event_prop", event_id, name, value)
+
+    def update_event(self, event_id, new_date, new_title):
+        self.run_method("update_event", id, new_date, new_title)
+
+    async def get_events(self) -> None:
+        """Get a list of all events in the calendar."""
+        result = await self.run_method('get_events', timeout=20)
+        print(result)
+
     @property
     def events(self) -> list[dict]:
         """List of events currently displayed in the calendar."""
