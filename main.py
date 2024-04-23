@@ -31,6 +31,7 @@ def handle_event_click(event: events.GenericEventArguments, ui_elements: dict):
         ui_elements["title"].set_value(clicked_event["title"])
         ui_elements["date"].set_value(clicked_event["start"])
         ui_elements["status"].set_value(clicked_event["extendedProps"]["status"])
+        ui_elements["completed"].set_value(clicked_event["extendedProps"]["completed"])
         if "project" in clicked_event["extendedProps"]:
             ui_elements["project"].set_value(clicked_event["extendedProps"]["project"])
         else:
@@ -53,9 +54,10 @@ def handle_update_event(ui_elements: dict):
         new_title = ui_elements["title"].value
         new_project = ui_elements["project"].value
         new_status = ui_elements["status"].value
+        new_completed = ui_elements["completed"].value
         ui_elements["month_calendar"].set_event_start(CURRENT_EVENT_ID, new_date)
         ui_elements["month_calendar"].set_event_props(CURRENT_EVENT_ID, {"title": new_title, "project": new_project,
-                                                                         "status": new_status})
+                                                                         "status": new_status, "completed": new_completed})
 
 
 def list_view_calendar(events_list: list[Event]):
@@ -103,8 +105,10 @@ def main():
                         ui.date().bind_value(ui_elements["date"])
                 ui.label("Project")
                 ui_elements["project"] = ui.select(projects_list, value=1, clearable=True, with_input=True)
-                ui.label("Event")
+                ui.label("Status")
                 ui_elements["status"] = ui.select(["Scheduled", "Logged"], value="")
+                ui.label("Completed")
+                ui_elements["completed"] = ui.radio(["Yes", "No"], value="No").props('inline')
                 ui.button('Update Event', on_click=lambda: handle_update_event(ui_elements))
 
     ui.run()

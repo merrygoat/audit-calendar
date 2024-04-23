@@ -10,15 +10,22 @@ class Event(peewee.Model):
     project = peewee.CharField(null=True)
     description = peewee.CharField(null=True)
     status = peewee.CharField()
+    completed = peewee.BooleanField()
 
     class Meta:
         database = db
 
     def to_dict(self):
+        if self.completed:
+            completed = "Yes"
+        else:
+            completed = "No"
+
         return {"id": self.id,
                 "title": self.title,
                 "date": self.date.isoformat(),
                 "description": self.description,
                 "project": self.project,
                 "status": self.status,
+                "completed": completed,
                 "allDay": "true"}
