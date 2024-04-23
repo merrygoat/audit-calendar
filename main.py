@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from nicegui import events, ui
 
 from fullcalendar import FullCalendar
@@ -8,8 +6,9 @@ from models import db, Event
 CURRENT_EVENT_ID = None
 
 
-def month_view_calendar(events_list: list[dict], ui_elements: dict,
-                        classes="") -> FullCalendar:
+def month_view_calendar(events_list: list[Event], ui_elements: dict, classes="") -> FullCalendar:
+
+    events_list = [event.to_dict() for event in events_list]
 
     options = {
         'initialView': 'dayGridMonth',
@@ -31,11 +30,11 @@ def handle_event_click(event: events.GenericEventArguments, ui_elements: dict):
         clicked_event = event.args["info"]["event"]
         ui_elements["title"].set_value(clicked_event["title"])
         ui_elements["date"].set_value(clicked_event["start"])
-        if "extendedProps" in clicked_event:
-            if "project" in clicked_event["extendedProps"]:
-                ui_elements["project"].set_value(clicked_event["extendedProps"]["project"])
-            else:
-                ui_elements["project"].set_value("")
+        ui_elements["status"].set_value(clicked_event["extendedProps"]["status"])
+        if "project" in clicked_event["extendedProps"]:
+            ui_elements["project"].set_value(clicked_event["extendedProps"]["project"])
+        else:
+            ui_elements["project"].set_value("")
 
         global CURRENT_EVENT_ID
         if CURRENT_EVENT_ID is not None:
@@ -53,11 +52,15 @@ def handle_update_event(ui_elements: dict):
         new_date = ui_elements["date"].value
         new_title = ui_elements["title"].value
         new_project = ui_elements["project"].value
+        new_status = ui_elements["status"].value
         ui_elements["month_calendar"].set_event_start(CURRENT_EVENT_ID, new_date)
-        ui_elements["month_calendar"].set_event_props(CURRENT_EVENT_ID, {"title": new_title, "project": new_project})
+        ui_elements["month_calendar"].set_event_props(CURRENT_EVENT_ID, {"title": new_title, "project": new_project,
+                                                                         "status": new_status})
 
 
-def list_view_calendar(events_list: list[dict]):
+def list_view_calendar(events_list: list[Event]):
+    events_list = [event.to_dict() for event in events_list]
+
     options = {
         "initialView": 'listYear',
         "events": events_list,
@@ -69,12 +72,8 @@ def list_view_calendar(events_list: list[dict]):
 
 @ui.page('/')
 def main():
-    events_list = [
-        {"id": 1, "title": "Rotate keys", "description": "Rotate keys for REMORA", "date": datetime(2024, 4, 20).isoformat(), 'allDay': 'true'},
-        {"id": 2, "title": "Check EC2", "description": "Check the EC2 instances for bugs", "project": "CFHH", "date": datetime(2024, 4, 23).isoformat(), 'allDay': 'true'},
-        {"id": 3, "title": "Rebuild instances", "description": "Rebuild and redeploy EC2 instances", "date": datetime(2024, 4, 25).isoformat(), 'allDay': 'true'}
-        ]
-
+    events_query = Event.select()
+    events_list = [event for event in events_query]
     projects_list = ["REMORA", "CFHH"]
 
     ui_elements = {}
@@ -104,6 +103,8 @@ def main():
                         ui.date().bind_value(ui_elements["date"])
                 ui.label("Project")
                 ui_elements["project"] = ui.select(projects_list, value=1, clearable=True, with_input=True)
+                ui.label("Event")
+                ui_elements["status"] = ui.select(["Scheduled", "Logged"], value="")
                 ui.button('Update Event', on_click=lambda: handle_update_event(ui_elements))
 
     ui.run()
