@@ -26,7 +26,6 @@ def month_view_calendar(events_list: list[Event], ui_elements: dict, classes="")
 
 def handle_event_click(event: events.GenericEventArguments, ui_elements: dict):
     if 'info' in event.args:
-        calendar_instance = event.sender
         clicked_event = event.args["info"]["event"]
         ui_elements["title"].set_value(clicked_event["title"])
         ui_elements["date"].set_value(clicked_event["start"])
@@ -37,13 +36,9 @@ def handle_event_click(event: events.GenericEventArguments, ui_elements: dict):
         else:
             ui_elements["project"].set_value("")
 
+        ui_elements["dialog"].open()
         global CURRENT_EVENT_ID
-        if CURRENT_EVENT_ID is not None:
-            calendar_instance.set_event_props(CURRENT_EVENT_ID, {"backgroundColor": "#3788d8",
-                                                                 "borderColor": "#3788d8"})
         CURRENT_EVENT_ID = clicked_event["id"]
-        calendar_instance.set_event_props(CURRENT_EVENT_ID, {"backgroundColor": "red",
-                                                             "borderColor": "red"})
 
 
 def handle_update_event(ui_elements: dict):
@@ -58,6 +53,7 @@ def handle_update_event(ui_elements: dict):
         ui_elements["month_calendar"].set_event_start(CURRENT_EVENT_ID, new_date)
         ui_elements["month_calendar"].set_event_props(CURRENT_EVENT_ID, {"title": new_title, "project": new_project,
                                                                          "status": new_status, "completed": new_completed})
+        ui_elements["dialog"].close()
 
 
 def list_view_calendar(events_list: list[Event]):
@@ -91,28 +87,28 @@ def main():
                 with ui.tab_panel(two):
                     list_view_calendar(events_list)
 
-        with ui.column().classes('w-1/2'):
-            ui.label("Selected Event Details")
-            with ui.grid(columns=2).classes('w-1/2'):
-                ui.label("Title")
-                ui_elements["title"] = ui.input()
+    with ui.dialog() as ui_elements["dialog"], ui.card():
+        ui.label("Selected Event Details")
+        with ui.grid(columns=2):
+            ui.label("Title")
+            ui_elements["title"] = ui.input()
 
-                ui.label("Date")
-                with ui.input('Date') as ui_elements["date"]:
-                    with ui_elements["date"].add_slot('append'):
-                        ui.icon('edit_calendar').on('click', lambda: menu.open()).classes('cursor-pointer')
-                    with ui.menu() as menu:
-                        ui.date().bind_value(ui_elements["date"])
-                ui.label("Project")
-                ui_elements["project"] = ui.select(projects_list, value=1, clearable=True, with_input=True)
-                ui.label("Status")
-                ui_elements["status"] = ui.select(["Scheduled", "Logged"], value="")
-                ui.label("Completed")
-                ui_elements["completed"] = ui.radio(["Yes", "No"], value="No").props('inline')
-                ui.button('Update Event', on_click=lambda: handle_update_event(ui_elements))
+            ui.label("Date")
+            with ui.input('Date') as ui_elements["date"]:
+                with ui_elements["date"].add_slot('append'):
+                    ui.icon('edit_calendar').on('click', lambda: menu.open()).classes('cursor-pointer')
+                with ui.menu() as menu:
+                    ui.date().bind_value(ui_elements["date"])
+            ui.label("Project")
+            ui_elements["project"] = ui.select(projects_list, value=1, clearable=True, with_input=True)
+            ui.label("Status")
+            ui_elements["status"] = ui.select(["Scheduled", "Logged"], value="")
+            ui.label("Completed")
+            ui_elements["completed"] = ui.radio(["Yes", "No"], value="No").props('inline')
+            ui.button('Update Event', on_click=lambda: handle_update_event(ui_elements))
+            ui.button('Cancel', on_click=lambda: ui_elements["dialog"].close())
 
     ui.run()
-
 
 def initialise_db(events_list: list[dict]):
     db.create_tables([Event])
