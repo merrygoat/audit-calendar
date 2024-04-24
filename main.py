@@ -1,4 +1,4 @@
-import nicegui.elements.switch
+from nicegui.elements import switch, select
 from nicegui import events, ui
 
 from fullcalendar import FullCalendar
@@ -65,7 +65,7 @@ def list_view_calendar(events_list: list[Event]):
     FullCalendar(options)
 
 
-def change_event_visibility(sender: nicegui.elements.switch.Switch, ui_elements: dict):
+def change_event_visibility(sender: switch.Switch, ui_elements: dict):
     if sender.value:
         display_type = 'auto'
     else:
@@ -77,6 +77,21 @@ def change_event_visibility(sender: nicegui.elements.switch.Switch, ui_elements:
     events_to_show = Event.select().where(Event.status == event_type)
     for event in events_to_show:
         ui_elements["month_calendar"].set_event_props(event.id, {"display": display_type})
+
+
+def filter_events_by_project(sender: select.Select, ui_elements: dict):
+    if not sender.value:
+        events_to_hide = []
+        events_to_show = Event.select()
+    else:
+        events_to_hide = Event.select().where((Event.project != sender.value) | (Event.project.is_null()))
+        events_to_show = Event.select().where(Event.project == sender.value)
+
+    for event in events_to_show:
+        ui_elements["month_calendar"].set_event_props(event.id, {"display": 'auto'})
+
+    for event in events_to_hide:
+        ui_elements["month_calendar"].set_event_props(event.id, {"display": 'none'})
 
 
 @ui.page('/')
@@ -98,29 +113,33 @@ def main():
                 with ui.tab_panel(two):
                     list_view_calendar(events_list)
         with ui.column().classes('w-1/3'):
+            ui.label("Event Filters")
             ui_elements["scheduled_switch"] = ui.switch("Show Scheduled Events", value=True,
                                                         on_change=lambda e: change_event_visibility(e.sender, ui_elements))
             ui_elements["logged_switch"] = ui.switch("Show Logged Events", value=True,
                                                      on_change=lambda e: change_event_visibility(e.sender, ui_elements))
+            ui_elements["project_filter"] = ui.select(projects_list, label="Project", clearable=True, with_input=True,
+                                                      on_change=lambda e: filter_events_by_project(e.sender, ui_elements))
 
-    with ui.dialog() as ui_elements["dialog"], ui.card():
+    with ui.dialog() as ui_elements["dialog"], ui.card().classes():
         ui.label("Selected Event Details")
-        with ui.grid(columns=2):
-            ui.label("Title")
+        with ui.grid(columns='80px auto').classes('w-full'):
+            ui.label("Title").classes('place-content-center')
             ui_elements["title"] = ui.input()
-
-            ui.label("Date")
+            ui.label("Date").classes('place-content-center')
             with ui.input('Date') as ui_elements["date"]:
                 with ui_elements["date"].add_slot('append'):
                     ui.icon('edit_calendar').on('click', lambda: menu.open()).classes('cursor-pointer')
                 with ui.menu() as menu:
                     ui.date().bind_value(ui_elements["date"])
-            ui.label("Project")
+            ui.label("Project").classes('place-content-center')
             ui_elements["project"] = ui.select(projects_list, value=1, clearable=True, with_input=True)
-            ui.label("Status")
-            ui_elements["status"] = ui.select(["Scheduled", "Logged"], value="")
-            ui.label("Completed")
+            ui.label("Status").classes('place-content-center')
+            ui_elements["status"] = ui.radio(["Scheduled", "Logged"]).props('inline')
+            ui.label("Completed").classes('place-content-center')
             ui_elements["completed"] = ui.radio(["Yes", "No"], value="No").props('inline')
+        with ui.row().classes('w-full q-mt-md'):
+            ui.space()
             ui.button('Update Event', on_click=lambda: handle_update_event(ui_elements))
             ui.button('Cancel', on_click=lambda: ui_elements["dialog"].close())
 
