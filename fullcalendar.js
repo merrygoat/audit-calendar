@@ -33,7 +33,7 @@ export default {
         },
         set_event_prop(id, prop_name, prop_value) {
             if (this.calendar) {
-                let built_in_props = ["id", "title", "backgroundColor", "borderColor"]
+                let built_in_props = ["id", "title", "backgroundColor", "borderColor", "display"]
                 let event = this.calendar.getEventById(id)
 
                 if (built_in_props.includes(prop_name)) {

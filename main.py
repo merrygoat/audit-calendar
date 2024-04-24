@@ -1,3 +1,4 @@
+import nicegui.elements.switch
 from nicegui import events, ui
 
 from fullcalendar import FullCalendar
@@ -25,16 +26,14 @@ def month_view_calendar(events_list: list[Event], ui_elements: dict, classes="")
 
 
 def handle_event_click(event: events.GenericEventArguments, ui_elements: dict):
+    extended_props = ["status", "completed", "project"]
+
     if 'info' in event.args:
         clicked_event = event.args["info"]["event"]
         ui_elements["title"].set_value(clicked_event["title"])
         ui_elements["date"].set_value(clicked_event["start"])
-        ui_elements["status"].set_value(clicked_event["extendedProps"]["status"])
-        ui_elements["completed"].set_value(clicked_event["extendedProps"]["completed"])
-        if "project" in clicked_event["extendedProps"]:
-            ui_elements["project"].set_value(clicked_event["extendedProps"]["project"])
-        else:
-            ui_elements["project"].set_value("")
+        for prop in extended_props:
+            ui_elements[prop].set_value(clicked_event["extendedProps"][prop])
 
         ui_elements["dialog"].open()
         global CURRENT_EVENT_ID
@@ -42,17 +41,15 @@ def handle_event_click(event: events.GenericEventArguments, ui_elements: dict):
 
 
 def handle_update_event(ui_elements: dict):
+    props = ["title", "project", "status", "completed"]
+
     if CURRENT_EVENT_ID is None:
         return None
     else:
-        new_date = ui_elements["date"].value
-        new_title = ui_elements["title"].value
-        new_project = ui_elements["project"].value
-        new_status = ui_elements["status"].value
-        new_completed = ui_elements["completed"].value
-        ui_elements["month_calendar"].set_event_start(CURRENT_EVENT_ID, new_date)
-        ui_elements["month_calendar"].set_event_props(CURRENT_EVENT_ID, {"title": new_title, "project": new_project,
-                                                                         "status": new_status, "completed": new_completed})
+        ui_elements["month_calendar"].set_event_start(CURRENT_EVENT_ID, ui_elements["date"].value)
+        for prop in props:
+            ui_elements["month_calendar"].set_event_props(CURRENT_EVENT_ID, {prop: ui_elements[prop].value})
+
         ui_elements["dialog"].close()
 
 
@@ -68,6 +65,20 @@ def list_view_calendar(events_list: list[Event]):
     FullCalendar(options)
 
 
+def change_event_visibility(sender: nicegui.elements.switch.Switch, ui_elements: dict):
+    if sender.value:
+        display_type = 'auto'
+    else:
+        display_type = 'none'
+    if "Scheduled" in sender.text:
+        event_type = "Scheduled"
+    else:
+        event_type = "Logged"
+    events_to_show = Event.select().where(Event.status == event_type)
+    for event in events_to_show:
+        ui_elements["month_calendar"].set_event_props(event.id, {"display": display_type})
+
+
 @ui.page('/')
 def main():
     events_query = Event.select()
@@ -77,7 +88,7 @@ def main():
     ui_elements = {}
 
     with ui.row().classes('w-full no-wrap'):
-        with ui.column().classes('w-1/2'):
+        with ui.column().classes('w-2/3'):
             with ui.tabs().classes('w-full') as tabs:
                 one = ui.tab('Month View')
                 two = ui.tab('List View')
@@ -86,6 +97,11 @@ def main():
                     ui_elements["month_calendar"] = month_view_calendar(events_list, ui_elements)
                 with ui.tab_panel(two):
                     list_view_calendar(events_list)
+        with ui.column().classes('w-1/3'):
+            ui_elements["scheduled_switch"] = ui.switch("Show Scheduled Events", value=True,
+                                                        on_change=lambda e: change_event_visibility(e.sender, ui_elements))
+            ui_elements["logged_switch"] = ui.switch("Show Logged Events", value=True,
+                                                     on_change=lambda e: change_event_visibility(e.sender, ui_elements))
 
     with ui.dialog() as ui_elements["dialog"], ui.card():
         ui.label("Selected Event Details")
@@ -109,12 +125,6 @@ def main():
             ui.button('Cancel', on_click=lambda: ui_elements["dialog"].close())
 
     ui.run()
-
-def initialise_db(events_list: list[dict]):
-    db.create_tables([Event])
-
-    for event in events_list:
-        new_event = Event.create(name=event["name"], description=event["description"], date=event["date"])
 
 
 main()
