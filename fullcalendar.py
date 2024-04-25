@@ -24,32 +24,29 @@ class FullCalendar(Element, component='fullcalendar.js'):
         if on_click:
             self.on('click', lambda e: handle_event(on_click, e))
 
-    def add_event(self, title: str, start: str, end: str, **kwargs) -> None:
+    def add_event(self, event: dict) -> None:
         """Add an event to the calendar.
 
-        :param title: title of the event
-        :param start: start time of the event
-        :param end: end time of the event
+        :param event: A dictionary of event parameters.
         """
-        event_dict = {'title': title, 'start': start, 'end': end, **kwargs}
-        self._props['options']['events'].append(event_dict)
+        self._props['options']['events'].append(event)
         self.update()
         self.run_method('update_calendar')
 
-    def remove_event(self, title: str, start: str, end: str) -> None:
+    def remove_event(self, event_id: str, update: bool = True) -> None:
         """Remove an event from the calendar.
 
-        :param title: title of the event
-        :param start: start time of the event
-        :param end: end time of the event
+        :param event_id: id of the event
+        :param update: Whether to run an update of the calendar element.
         """
         for event in self._props['options']['events']:
-            if event['title'] == title and event['start'] == start and event['end'] == end:
+            if event['id'] == event_id:
                 self._props['options']['events'].remove(event)
                 break
 
-        self.update()
-        self.run_method('update_calendar')
+        if update:
+            self.update()
+            self.run_method('update_calendar')
 
     def set_event_start(self, event_id: int, date: str) -> None:
         self.run_method("set_event_start", event_id, date)
