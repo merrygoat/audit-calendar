@@ -1,9 +1,9 @@
 from nicegui.elements import switch, select
 from nicegui import ui
 
-from dialog import open_edit_event_dialog, update_event
 from fullcalendar import FullCalendar
 from models import Event
+import dialog
 
 
 def month_view_calendar(events_list: list[Event], ui_elements: dict, classes="") -> FullCalendar:
@@ -20,7 +20,7 @@ def month_view_calendar(events_list: list[Event], ui_elements: dict, classes="")
         'events': events_list,
     }
 
-    month_calendar = FullCalendar(options, on_click=lambda e: open_edit_event_dialog(e, ui_elements)).classes(classes)
+    month_calendar = FullCalendar(options, on_click=lambda e: dialog.open_edit_event_dialog(e, ui_elements)).classes(classes)
     return month_calendar
 
 
@@ -93,30 +93,9 @@ def main():
                                                      on_change=lambda e: change_event_visibility(e.sender, ui_elements))
             ui_elements["project_filter"] = ui.select(projects_list, label="Project", clearable=True, with_input=True,
                                                       on_change=lambda e: filter_events_by_project(e.sender, ui_elements))
+            ui.button("Add New Event", on_click=lambda e: dialog.open_add_event_dialog(ui_elements))
 
-    with ui.dialog() as ui_elements["dialog"], ui.card().classes():
-        ui.label("Selected Event Details")
-        ui_elements["id"] = ui.input()
-        ui_elements["id"].set_visibility(False)
-        with ui.grid(columns='80px auto').classes('w-full'):
-            ui.label("Title").classes('place-content-center')
-            ui_elements["title"] = ui.input()
-            ui.label("Date").classes('place-content-center')
-            with ui.input('Date') as ui_elements["start"]:
-                with ui_elements["start"].add_slot('append'):
-                    ui.icon('edit_calendar').on('click', lambda: menu.open()).classes('cursor-pointer')
-                with ui.menu() as menu:
-                    ui.date().bind_value(ui_elements["start"])
-            ui.label("Project").classes('place-content-center')
-            ui_elements["project"] = ui.select(projects_list, value=1, clearable=True, with_input=True)
-            ui.label("Status").classes('place-content-center')
-            ui_elements["status"] = ui.radio(["Scheduled", "Logged"]).props('inline')
-            ui.label("Completed").classes('place-content-center')
-            ui_elements["completed"] = ui.radio(["Yes", "No"], value="No").props('inline')
-        with ui.row().classes('w-full q-mt-md'):
-            ui.space()
-            ui_elements["dialog_confirm_button"] = ui.button('Update Event', on_click=lambda: update_event(ui_elements))
-            ui.button('Cancel', on_click=lambda: ui_elements["dialog"].close())
+    dialog.build_dialog(projects_list, ui_elements)
 
     ui.run()
 
