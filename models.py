@@ -6,10 +6,10 @@ db = peewee.SqliteDatabase('data.db')
 props = {"id": "", "title": "", "start": ""}
 
 # FullCalendar Event extendedProperties and default values
-extended_props = {"status": "Scheduled", "completed": "No", "project": ""}
+extended_props = {"status": "Scheduled", "completed": "No", "project": "", "repeating": "No"}
 
 # Unused properties and default values
-unused_props = {"description": "", "repeating": False}
+unused_props = {"description": ""}
 
 # FullCalendar Event properties that are presented in the edit event dialog
 all_props = props | extended_props
@@ -23,7 +23,7 @@ class Event(peewee.Model):
     completed = peewee.CharField(choices=["Yes", "No"])
     project = peewee.CharField(null=True)
     description = peewee.CharField(null=True)
-    repeating = peewee.BooleanField(default=False)
+    repeating = peewee.CharField(choices=["Yes", "No"], default="No")
 
     class Meta:
         database = db

@@ -80,6 +80,9 @@ def build_dialog(projects_list, ui_elements):
             ui_elements["status"] = ui.radio(["Scheduled", "Logged"]).props('inline')
             ui.label("Completed").classes('place-content-center')
             ui_elements["completed"] = ui.radio(["Yes", "No"], value="No").props('inline')
+            ui.label("Repeating Event").classes('place-content-center')
+            ui_elements["repeating"] = ui.radio(["Yes", "No"], value="No").props('inline')
+
         with ui.row().classes('w-full q-mt-md'):
             ui.space()
             ui_elements["add_event_button"] = ui.button('Add New Event', on_click=lambda: add_new_event(ui_elements))
