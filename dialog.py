@@ -82,6 +82,12 @@ def build_dialog(projects_list, ui_elements):
             ui_elements["completed"] = ui.radio(["Yes", "No"], value="No").props('inline')
             ui.label("Repeating Event").classes('place-content-center')
             ui_elements["repeating"] = ui.radio(["Yes", "No"], value="No").props('inline')
+        with ui.card() as repeat_card:
+            repeat_card.bind_visibility_from(ui_elements["repeating"], "value", value="Yes")
+            with ui.grid(columns='80px auto auto').classes('w-full'):
+                ui.label("Repeat every").classes('place-content-center')
+                ui_elements["repeat_interval"] = ui.select(list(range(1, 100)), value=1)
+                ui_elements["repeat_frequency"] = ui.select(["Day", "Week", "Month"], value="Day").props("inline")
 
         with ui.row().classes('w-full q-mt-md'):
             ui.space()

@@ -6,7 +6,8 @@ db = peewee.SqliteDatabase('data.db')
 props = {"id": "", "title": "", "start": ""}
 
 # FullCalendar Event extendedProperties and default values
-extended_props = {"status": "Scheduled", "completed": "No", "project": "", "repeating": "No"}
+extended_props = {"status": "Scheduled", "completed": "No", "project": "", "repeating": "No", "repeat_interval": 1,
+                  "repeat_frequency": "Day"}
 
 # Unused properties and default values
 unused_props = {"description": ""}
@@ -24,11 +25,14 @@ class Event(peewee.Model):
     project = peewee.CharField(null=True)
     description = peewee.CharField(null=True)
     repeating = peewee.CharField(choices=["Yes", "No"], default="No")
+    repeat_interval = peewee.IntegerField(default=1, null=True)
+    repeat_frequency = peewee.CharField(choices=["Day", "Week", "Month"], null=True)
 
     class Meta:
         database = db
 
     def to_dict(self):
+        # TODO: Get values dynamically
         return {"id": self.id,
                 "title": self.title,
                 "start": self.start,
@@ -37,5 +41,7 @@ class Event(peewee.Model):
                 "project": self.project,
                 "description": self.description,
                 "repeating": self.repeating,
+                "repeat_interval": self.repeat_interval,
+                "repeat_frequency": self.repeat_frequency,
                 "allDay": "true"}
 
