@@ -12,10 +12,13 @@ def open_edit_event_dialog(event: events.GenericEventArguments, ui_elements: dic
     # Need this 'info' catch as an event click generates two different events, and we only want one of them
     if 'info' in event.args:
         clicked_event = event.args["info"]["event"]
+        event_id = clicked_event["id"]
+
+        event = Event.select().where(Event.id == event_id).get()
         for prop in models.props:
-            ui_elements[prop].set_value(clicked_event[prop])
+            ui_elements[prop].set_value(getattr(event, prop))
         for prop in models.extended_props:
-            ui_elements[prop].set_value(clicked_event["extendedProps"][prop])
+            ui_elements[prop].set_value(getattr(event, prop))
 
         ui_elements["dialog"].open()
 
@@ -32,6 +35,10 @@ def open_add_event_dialog(ui_elements: dict):
 
 
 def update_event(ui_elements: dict):
+    if not validate_dialog(ui_elements):
+        # Don't allow form completion if any element is invalid
+        return False
+
     event_id = ui_elements["id"].value
 
     # Get the event and update it from the values in the dialog
@@ -48,6 +55,11 @@ def update_event(ui_elements: dict):
 
 def add_new_event(ui_elements):
     """Create a new Event object, add it to the calendar and close the dialog."""
+
+    if not validate_dialog(ui_elements):
+        # Don't allow form completion if any element is invalid
+        return False
+
     event_details = {element_name: ui_elements[element_name].value for element_name in models.all_props}
     # id will be auto assigned by db - so don't specify it.
     event_details.pop("id")
@@ -59,7 +71,19 @@ def add_new_event(ui_elements):
     ui_elements["dialog"].close()
 
 
-def build_dialog(projects_list, ui_elements):
+def validate_dialog(ui_elements: dict):
+    elements_valid = []
+    for prop, default_value in models.all_props.items():
+        if "validate" in dir(ui_elements[prop]):
+            elements_valid.append(ui_elements[prop].validate())
+    if all(elements_valid):
+        return True
+    else:
+        ui.notify('Some fields are invalid', type='negative')
+        return False
+
+
+def build_dialog(projects_list, ui_elements: dict):
     """Create the nicegui elements that make up the dialog box."""
     with ui.dialog() as ui_elements["dialog"], ui.card().classes():
         ui_elements["id"] = ui.input()
